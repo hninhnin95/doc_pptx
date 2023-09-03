@@ -1,0 +1,332 @@
+それではお時間になりましたので、本日のAWS環境構築ナレージ共有会を開始させていただきたいと思います。
+皆さん、お疲れ様です。
+本日はですね、AWS環境構築、Elastic Container Registry、Elastic Beanstalk二つのサービスを使ってアプリケーションをデプロイする手順を皆さんに共有したいと思います。
+まあ皆さんの中にはもちろんそのもうすでにしていらしゃると思ういますが、一方であのAWSについて聞いたことはあるものの実際にどうやっていいかわからない方もいらっしゃると思いますので今日はその初心者の方に向けてご説明いたします。
+それではよろしくお願いいたします。
+私は８グルプチェリチームのニンニンユです。
+私は今AWSについて勉強中です。
+現場の経験がなくて、チーム内でAWS勉強会を行いて、自分で実習したものを皆さんに共有したいと思います。
+今度の共有会で何かご不足ことがあればご了承いただければと思います。
+早速ですが始めさせていただきます。
+アジャンターはCICDで何だろうか？、CICDの具体的なワークフロー、環境構築手順を説明いたします。
+
+初めにCICDで何だろうか？というと
+CICDは、何か特定の技術を指すものではなく、ソフトウェアのへんこうを常にテストし、自動で本番環境に適用できるような状態にしておく開発手法です。
+CI/CDとは、「Continuous Integration／Continuous Delivery」のりゃくであり、日本語では継続的インティグレーション/継続的デリバリーと呼ばれています。
+それでは、CIとCDそれぞれについて説明いたします。
+
+CIは、
+ソフトウェア開発において、ビルドやテストを自動化し、短期間で品質管理を行う手法
+
+CDは、Continuous　Delivery ・ Continuous　Deploymentという用語もあります。
+この二つの違いは
+継続的デリバリーは、コードの変更をリリースする為の準備を整えるソフトウェア エンジニアリングの手法です。
+継続的デプロイは、コードの変更を本番環境に継続的にリリースすることを目的としています。
+
+次は具体的なCI/CDの仕組みを説明いたします。
+
+まずは、開発者が開発されたソースコードをバージョン管理シールへコミットされると、CIは自動的に「コードにエラーがないか」「既存の機能をはかいしていないか」といった各種のテストを行います。
+CIのテストが成功したら、次はCDにコードがリリース用のブランチにマージされ、ビルドが行います。
+CDのビルドされたアプリケーションは、自動でテスト用のサーバーに「デリバリー」されてすぐに動作確認が行えるようになります。
+これを「継続的デリバリー」と呼びます。
+「継続的デリバリー」では、変更したコードをテスト用のサーバーまでは自動でデリバリーしますが、本番環境へのデプロイは行いません。本番環境へのデプロイまで自動的に行うことは「継続的デプロイ」と呼びます。
+そういう流れて開発者が新機能をコミットしたら自動でテスト・ビルド・デプロイを実行し、テスト環境ですぐに動作確認が可能であり、本番リリースまでも自動で行うというのはCI/CDパイプラインの構築です。
+
+次は、本日のテーマのAWS環境構築の為、
+このナレージ共有会で行っていることを説明いたします。
+一つ目は→Dockerをもちいた開発環境の構築です。
+それで、Ruby on Railsで実施しました。
+二つ目は→AWS でのインフラ構築です。
+ECR、EB、EC2、RDS、Load Balancing、auto scalingのせいびをしました。
+三つ目は→CircleCIで自動デプロイです。
+CircleCIのworkflow の整備して、テスト、ビルド、デプロイを実施しました。
+
+次は私のプロジェクトで使用した技術について説明いたします。
+開発用のため、プログラミング言語はRubyとRails、DBはMySQL、コンテナはDocker
+バージョン管理シールはGitHub
+CIシールはCircleCI
+インフラはAWSのECR,EB,EC2,Load balancing,auto scalingを使いました。
+
+次は、使用した技術の中からAWSサービスを説明したいと思います。
+これはAWS Elastic Container Registry　
+ECRはフルマネージド Docker コンテナレジストリです。
+このレジストリを使うと、コンテナイメージを簡単に保存、共有、管理、デプロイすることができます。
+ECRは、Amazon Elastic Container Service(ECS)、Elastic Kubernetes Service(EKS)、Elastic Beanstalk、Amazon Lambdaに統合されているため、開発から本番までのワークフローを簡単にできます。
+
+今度のプロジェクトはDockerコンテナを動かすために、AWS Elastic Container Registry　ECRを使いました。
+
+次は、AWS Elastic Beanstalkです。
+アプリケーションのデプロイと管理を簡単にする AWSサービスです。
+アプリケーションのコードをアップロードするだけで、リソースのプロビジョニング、ロードバランシング、オートスケーリング、モニタリングなどの細かい作業はサービスが自動的に処理します。
+Elastic Beanstalk には Amazon Elastic Compute Cloud (EC2)、Amazon Elastic Container Service (ECS)、AWS Auto Scaling、Elastic Load Balancing (ELB) などのしゅような AWS のサービスが使用されており、多くのプラットフォームもサポートします。
+
+EBは必要な要素を一通り揃えた環境を作成で来るし、スタートアップシングルアプリケーションの為、適用なサービスなので、EBを使いました。
+
+次は、今度のプロジェクトデプロイ流れをもっとわかるようにフローチャートで説明いたします。
+ロカルにプロジェクトを作成して、コードリポジトリへプッシュします。
+CircleCIシールはコード変更をトリガーして、テストjobs実行を行います。
+テストが成功すると、ビルドを行います。
+ビルド中で、docker image をAWS　ECR にプッシュします。
+ビルドとプッシュが成功すると、デプロイを行います。
+デプロイ中で、ECR上のdocker image をEB上にプルして、EC2インスタンスに実施します。
+EB上のイメージはRDSデータベースとつながります。
+EBのデフォルトnginxはインターネットにフォワードします。
+フォワードされたアプリケーションをユーザがアクセスできます。
+
+これは今度のプロジェクトデプロイの流れです。
+
+次はDocker環境のRuby on Railsプロジェクトを作成します。
+作成手順としては以下の通りです。
+GitHubでリポジトリを作成します。作成されたリポをロカルにクローンします。
+ロカルにダウンロードされたリポでRailsプロジェクトを以下のコメントを実施するとRailsプロジェクトが作成されます。
+次はdocker compose up でDocker起動します。
+Dockerが成功すると、ブラウザでlocalhost port noで実行するとRailsの初期画面が表示されます。
+RailsのCRUDプロジェクトを実装してRailsテスティングも追加してリポジトリへプッシュします。
+次はRailsプロジェクトを実行すると、一覧画面、登録画面、編集画面、削除ダイアログ画面が立ち上がります。
+
+このプロジェクトをAWS CLI を使用して Docker コンテナを AWS Elastic Beanstalk にデプロイを行います。
+次はCircleCIのワークフローを作成します。
+GitHubの任意リポジトリにCircleCIの設定ファイルを作成します。
+任意リポジトリの配下に .circleci ディレクトリを作成してconfig.yml ファイルを作成します。config.yml にテストjobsを追加します。
+テストjobsを説明いたします。
+jobs
+test_rails: これは私はRailsのテスティングを行いますので、test_rails名を付けましたが、自由に適用な名を付けてもいいです。
+docker: 私はDocker環境のRuby on Railsプロジェクトを作成しましたので、
+Rubyが含まれるDockerイメージを作成ということです。
+working_directory:実行するディレクトリを設定します。
+checkout:CI環境上の working_directory の場所にGitリポジトリをコピーすることです。
+次は、必要なプロジェクトのディペンデンシーをインストールして、Dbマイグレーションして、Railsテストを行うことです。
+
+workflows:上のJobsを動かすため、workflowで管理する対象jobの設定する必要です。
+
+次は、CircleCIでテストjobsを実行します。
+CircleCIをGitHubでログインします。
+Projects (リポジトリ)一覧が表示されるので、連携したいリポジトリの [Set Up Project] ボタンをクリックすると、
+右のダイアログ画面が表示されて、[Set Up Project]をクリックします。
+CircleCIが自動で動かして、テストjobsが成功します。
+
+次は、build と AWS ECR上にイメージをプッシュします。
+はじめに、ECRでリポジトリを作成します。
+AWS Management Consoleにサインインして、ECR コンソールを開きます。
+[使用方法]をクリックして、リポジトリ名を記載して作成します。
+
+次は、build and push jobsを作成します。
+build and push:ビルド、AWS ECRコンテナへプッシュを行うの為、build_and_push名を付けました。
+docker:Dockerイメージを作成します。
+次は、必要なディペンデンシーをインストールして、Dockerをビルドします。
+後は、AWS ECR をアクセスするため、AWSログインして、Dockerイメージをプッシュします。
+このbuild and push jobs を動かす為、workflowのjobsのしたに設定します。
+requires：というのはテスト（test_rails）が成功したら（build_and_push）実行するという意味です。
+
+次は、CircleCI用のIAMユーザを準備します。
+AWS Management Consoleにサインインして、IAM コンソールを開きます。
+ナビゲーションペインで [ユーザ] を選択し、[ユーザを追加]を選択して、ユーザ名を決めて「Next」に進みます。
+許可を設定のページで、[AdministratorAccess-AWSElasticBeanstalk, AmazonEC2ContainerRegistryPowerUser] パーミッション追加して「次へ」に進みます。
+「ユーザの作成」を押下して、ユーザが登録します。
+
+次は、アクセスキーを取得します。
+アクセスキーを管理するユーザー名を選択して[セキュリティ認証情報] タブします。
+アクセスキーを作成するには、[アクセスキーを作成] をクリックします。
+コマンドラインインターフェイス (CLI)ラジオを選択して、「次へ」に進むます。
+[アクセスキーを取得]  ページで、.csvファイルをダウンロード]をクリックして取得できます。
+
+次は、取得したアクセスキーをCircleCIの環境変数に設定します。
+CircleCIのプロジェクト設定から環境変数で取得したAccessKeyIDとSecretAccessKeyを設定します。
+
+次は、前config.ymlファイルにbuild and push jobsをコミット、プッシュされると、CircleCIが自動で動きます。
+
+build and push jobsが成功すると、Elastic Container Registry上にDockerイメージが登録されます。
+
+次はECR に登録した image を使って EBにデプロイするため、EBに新しい環境 を作成します。
+ElasticBeanstalk コンソールを開いて、ナビゲーションペインで [環境] を選択し、[新しい環境の作成]をクリックします。アプリケーション名[rails-cicd]を決めて、プラットフォームに[Docker]、プラットフォーム ブランチに[ Docker running on 64bit Amazon Linux2]を選択し、[より多くのオプションの設定]を押下して進みます。
+
+次はLoad balancing、Auto Scalingを追加します。
+Load Balancing を登録することで、アプリケーションの負荷分散ができて、アプリケーションのスケーラビリティと可溶性が向上します。
+Auto Scalingを用いてaccess量に応じてEC2instance数を増減させます。
+追加方法は以下通りです。
+容量の編集ボタンをクリックして環境タイプで [Load balanced] を選択し、[保存]をクリックして進みます。
+
+次は、Database　AWS　RDSを追加します。
+Databaseの編集ボタンをクリックしてDatabase 設定で Engineに[MySQL] を選択して、エンジンバージョンを決めて、ユーザ名とパスワードを記載し、[保存]をクリックして進みます。[新しい環境の作成]をクリックしすると、EBが登録されます。
+
+次は、アプリケーションのURLやヘルスチェックの状態を確認して、OKなら、
+URLをクリックすると、デプロイしたアプリにアクセスすることができます。
+以下のおめでとうございます画面が表示されます。
+
+次はElastic Beanstalk 環境にデータベース設定します。
+ElasticBeanstalk コンソールを開いてナビゲーションペインで [設定] を選択し[[ソフトウェア]の[編集]を押下して、[環境プロパティ]でDB設定します。
+DB_USERはデータベース用に設定したユーザー名、DB_PASSWORDはデータベース用に設定したパスワード、DB_NAMEはデータベース名 デフォルトebdbでDB_HOSTは RDS コンソールの [接続とセキュリティ] タブの[エンドポイント]値を設定して
+[適用]をクリックすると設定は完了します。
+
+次は、IAM Roleパーミッションを追加します。
+Amazon ECR に対する読み取り専用アクセスを付与します。せんようをふよ
+IAM コンソールを開いて、ナビゲーションペインで [ロール] を選択して、ロール名 カラムに[aws-elasticbeanstalk-ec2-role] を選択します。
+[AmazonEC2ContainerRegistryReadOnly]をチェックして、[許可を追加]をクリックしたらアクセス許可されました。
+Amazon ECR からイメージをプルすることもできます。
+
+次はdeploy jobs を作成します。
+deploy:デプロイを行う為、deploy名を付けます。
+docker:Dockerイメージを作成します。
+次は、必要なディペンデンシー（ebcli）をインストールして、EBデプロイを開始します。
+
+このデプロイjobsを動かす為、workflowのjobsのしたに設定します。
+requires：というのはtest_rails、build_and_push jobsが成功したら（deploy）実行するという意味です。
+
+次はデプロイ用の Docker イメージを準備します。
+
+次はCircleCIからEBへデプロイするため、configファイル追加必要です。
+次は許可したいホスト名追加します。
+
+次は、前config.ymlファイルにデプロイ jobsをコミット、プッシュされると、CircleCIが自動で動きます。
+deploy jobs が成功するとEBのアプリケーションのURLやヘルスチェックの状態を確認して、OKなら、URLをクリックすると、デプロイしたRails CRUDプロジェクトがアクセスできます。
+
+実施します。
+
+
+ご質問やご不明な点がございましたら、お願いいたします。
+ご指摘しても構いません。
+
+私の発表はここで終わりにいたします。
+
+AWSでの環境構築参考用として、
+シアトルStockにプロジェクトと手順書をプッシュします。
+
+AWSにきょうみがあって、最初から（プロジェクト作成）から試している方は
+８グルプStockのチェリチームのKnowledge共有フォルダに環境構築ドキュメントを入れますので、ぜひ試してみてください。
+
+次はCircleCIのワークフローを作成します。
+GitHubの任意リポジトリにCircleCIの設定ファイルを作成します。
+任意リポジトリの配下に .circleci ディレクトリを作成してconfig.yml ファイルを作成します。config.yml にテストjobsを追加します。
+テストjobsを説明いたします。
+jobs
+test_rails: これは私はRailsのテスティングを行いますので、test_rails名を付けましたが、自由に適用な名を付けてもいいです。
+docker: 私はDocker環境のRuby on Railsプロジェクトを作成しましたので、
+Rubyが含まれるDockerイメージを作成ということです。
+working_directory:実行するディレクトリを設定します。
+checkout:CI環境上の working_directory の場所にGitリポジトリをコピーすることです。
+次は、必要なプロジェクトのディペンデンシーをインストールして、Dbマイグレーションして、Railsテストを行うことです。
+
+workflows:上のJobsを動かすため、workflowで管理する対象jobの設定する必要です。
+
+次は、CircleCIでテストjobsを実行します。
+CircleCIをGitHubでログインします。
+Projects (リポジトリ)一覧が表示されるので、連携したいリポジトリの [Set Up Project] ボタンをクリックすると、
+右のダイアログ画面が表示されて、[Set Up Project]をクリックします。
+CircleCIが自動で動かして、テストjobsが成功します。
+
+次は、build と AWS ECR上にイメージをプッシュします。
+はじめに、ECRでリポジトリを作成します。
+AWS Management Consoleにサインインして、ECR コンソールを開きます。
+[使用方法]をクリックして、リポジトリ名を記載して作成します。
+
+次は、build and push jobsを作成します。
+build and push:ビルド、AWS ECRコンテナへプッシュを行うの為、build_and_push名を付けました。
+docker:Dockerイメージを作成します。
+次は、必要なディペンデンシーをインストールして、Dockerをビルドします。
+後は、AWS ECR をアクセスするため、AWSログインして、Dockerイメージをプッシュします。
+このbuild and push jobs を動かす為、workflowのjobsのしたに設定します。
+requires：というのはテスト（test_rails）が成功したら（build_and_push）実行するという意味です。
+
+次は、CircleCI用のIAMユーザを準備します。
+AWS Management Consoleにサインインして、IAM コンソールを開きます。
+ナビゲーションペインで [ユーザ] を選択し、[ユーザを追加]を選択して、ユーザ名を決めて「Next」に進みます。
+許可を設定のページで、[AdministratorAccess-AWSElasticBeanstalk, AmazonEC2ContainerRegistryPowerUser] パーミッション追加して「次へ」に進みます。
+「ユーザの作成」を押下して、ユーザが登録します。
+
+次は、アクセスキーを取得します。
+アクセスキーを管理するユーザー名を選択して[セキュリティ認証情報] タブします。
+アクセスキーを作成するには、[アクセスキーを作成] をクリックします。
+コマンドラインインターフェイス (CLI)ラジオを選択して、「次へ」に進むます。
+[アクセスキーを取得]  ページで、.csvファイルをダウンロード]をクリックして取得できます。
+
+次は、取得したアクセスキーをCircleCIの環境変数に設定します。
+CircleCIのプロジェクト設定から環境変数で取得したAccessKeyIDとSecretAccessKeyを設定します。
+
+次は、前config.ymlファイルにbuild and push jobsをコミット、プッシュされると、CircleCIが自動で動きます。
+
+build and push jobsが成功すると、Elastic Container Registry上にDockerイメージが登録されます。
+
+次はECR に登録した image を使って EBにデプロイするため、EBに新しい環境 を作成します。
+ElasticBeanstalk コンソールを開いて、ナビゲーションペインで [環境] を選択し、[新しい環境の作成]をクリックします。アプリケーション名[rails-cicd]を決めて、プラットフォームに[Docker]、プラットフォーム ブランチに[ Docker running on 64bit Amazon Linux2]を選択し、[より多くのオプションの設定]を押下して進みます。
+
+次はLoad balancing、Auto Scalingを追加します。
+Load Balancing を登録することで、アプリケーションの負荷分散ができて、アプリケーションのスケーラビリティと可溶性が向上します。
+Auto Scalingを用いてaccess量に応じてEC2instance数を増減させます。
+追加方法は以下通りです。
+容量の編集ボタンをクリックして環境タイプで [Load balanced] を選択し、[保存]をクリックして進みます。
+
+次は、Database　AWS　RDSを追加します。
+Databaseの編集ボタンをクリックしてDatabase 設定で Engineに[MySQL] を選択して、エンジンバージョンを決めて、ユーザ名とパスワードを記載し、[保存]をクリックして進みます。[新しい環境の作成]をクリックしすると、EBが登録されます。
+
+次は、アプリケーションのURLやヘルスチェックの状態を確認して、OKなら、
+URLをクリックすると、デプロイしたアプリにアクセスすることができます。
+以下のおめでとうございます画面が表示されます。
+
+次はElastic Beanstalk 環境にデータベース設定します。
+ElasticBeanstalk コンソールを開いてナビゲーションペインで [設定] を選択し[[ソフトウェア]の[編集]を押下して、[環境プロパティ]でDB設定します。
+DB_USERはデータベース用に設定したユーザー名、DB_PASSWORDはデータベース用に設定したパスワード、DB_NAMEはデータベース名 デフォルトebdbでDB_HOSTは RDS コンソールの [接続とセキュリティ] タブの[エンドポイント]値を設定して
+[適用]をクリックすると設定は完了します。
+
+次は、IAM Roleパーミッションを追加します。
+Amazon ECR に対する読み取り専用アクセスを付与します。せんようをふよ
+IAM コンソールを開いて、ナビゲーションペインで [ロール] を選択して、ロール名 カラムに[aws-elasticbeanstalk-ec2-role] を選択します。
+[AmazonEC2ContainerRegistryReadOnly]をチェックして、[許可を追加]をクリックしたらアクセス許可されました。
+Amazon ECR からイメージをプルすることもできます。
+
+次はdeploy jobs を作成します。
+deploy:デプロイを行う為、deploy名を付けます。
+docker:Dockerイメージを作成します。
+次は、必要なディペンデンシー（ebcli）をインストールして、EBデプロイを開始します。
+
+このデプロイjobsを動かす為、workflowのjobsのしたに設定します。
+requires：というのはtest_rails、build_and_push jobsが成功したら（deploy）実行するという意味です。
+
+次はデプロイ用の Docker イメージを準備します。
+
+次はCircleCIからEBへデプロイするため、configファイル追加必要です。
+次は許可したいホスト名追加します。
+
+次は、前config.ymlファイルにデプロイ jobsをコミット、プッシュされると、CircleCIが自動で動きます。
+deploy jobs が成功するとEBのアプリケーションのURLやヘルスチェックの状態を確認して、OKなら、URLをクリックすると、デプロイしたRails CRUDプロジェクトがアクセスできます。
+
+実施します。
+
+
+ご質問やご不明な点がございましたら、お願いいたします。
+ご指摘しても構いません。
+
+私の発表はここで終わりにいたします。
+
+AWSでの環境構築参考用として、
+シアトルStockにプロジェクトと手順書をプッシュします。
+
+AWSにきょうみがあって、最初から（プロジェクト作成）から試している方は
+８グルプStockのチェリチームのKnowledge共有フォルダに環境構築ドキュメントを入れますので、ぜひ試してみてください。
+
+進めさせていただきます。
+
+ssh ec2-user@54.144.67.205
+
+yum install mysql
+
+mysql -u railscicd -p -h awseb-e-sq2mbeuh6t-stack-awsebrdsdatabase-jfo822pkduhu.clrnpsc5jr5l.us-east-1.rds.amazonaws.com
+
+docker exec -it container id sh
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
